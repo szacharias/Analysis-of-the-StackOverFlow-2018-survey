@@ -1,13 +1,9 @@
 
 
-
-survey_results_schema.csv
-
+ 
 
 .ipynb_checkpoints/
-
-*.db
-
-survey_results_public.csv
+ 
+ 
 
 *.csv#
