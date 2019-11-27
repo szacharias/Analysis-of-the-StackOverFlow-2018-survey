@@ -9,3 +9,5 @@ survey_results_schema.csv
 *.db
 
 survey_results_public.csv
+
+*.csv#
