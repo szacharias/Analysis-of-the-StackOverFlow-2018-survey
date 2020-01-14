@@ -1,9 +1,8 @@
 # Analysis of the StackOverFlow 2018 survey  
 
 Part 1 : Objective <br>
-Part 2 : Steps<br>
-Part 3 : Code<br>
-Part 4 : Results<br>
+Part 2 : Steps<br> 
+Part 3 : Results<br>
 
 
 ### **Part 1 : Objective**   <br>
@@ -237,19 +236,653 @@ ax = sns.boxplot(x="Age",
                  data=temp)
 plt.savefig("./Figure/boxplot age group.png")
 ```
+In this plot we see that although age does not significantly affect median salary, it's easily inferred that salary does increase as age increases.
+
+5. To follow, we always wonder how much does contribution to opensource affects our chances
+
+```python 
+open_source_response = selected_response["OpenSource"]
+selected_response.convertedsalary = pd.to_numeric(selected_response.convertedsalary)
+selected_response.info()
+temp = selected_response[selected_response.DevType == 'Data scientist or machine learning specialist']
+temp = temp[temp.convertedsalary < 250000]
+ax = sns.boxplot(x="OpenSource", 
+                 y="convertedsalary", 
+                 hue="OpenSource", 
+                 data=temp)
+```
+
+```python 
+open_source_count_unique = selected_response.OpenSource.value_counts()
+open_source_label = []
+open_source_count_total = []
+for i in open_source_count_unique: 
+    open_source_label.append(open_source_count_unique[open_source_count_unique == i ].index[0])
+    open_source_count_total.append(i)
+
+```
+Only 44.2% of respondents contribute to opensource
+
+6. Next we focus on jobtypes
+``` python 
+def query_year_and_dev():
+    query_sql = "SELECT YearsCoding, DevType from " + main_table + " WHERE DevType is not null"
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall()
+    return rows
+years_coding_and_dev_type = pd.DataFrame(query_year_and_dev(), columns = ["YearsCoding" , "DevType"]) 
+# Split options and find specific options
+def find_set_dev_type():
+    unique_list = []
+    null_list_dev_type = []
+    for i in years_coding_and_dev_type.DevType:
+        if i is not None:
+            split_list = i.split(";") 
+            for i in split_list:
+                unique_list.append(i)
+        else :
+            null_list_dev_type.append(i) 
+    return set(unique_list)
+find_set_dev_type()
+```
+We see that the options for job types are as follow
+```
+'Back-end developer',
+ 'C-suite executive (CEO, CTO, etc.)',
+ 'Data or business analyst',
+ 'Data scientist or machine learning specialist',
+ 'Database administrator',
+ 'Designer',
+ 'Desktop or enterprise applications developer',
+ 'DevOps specialist',
+ 'Educator or academic researcher',
+ 'Embedded applications or devices developer',
+ 'Engineering manager',
+ 'Front-end developer',
+ 'Full-stack developer',
+ 'Game or graphics developer',
+ 'Marketing or sales professional',
+ 'Mobile developer',
+ 'Product manager',
+ 'QA or test developer',
+ 'Student',
+ 'System administrator'
+```
+Since we're focused on finding data science position relative information, we look at `'Data or business analyst',
+ 'Data scientist or machine learning specialist'` primarily
+ We also categorize software engineers as `'Back-end developer',  
+ 'Database administrator', 
+ 'Desktop or enterprise applications developer',
+ 'DevOps specialist', 
+ 'Embedded applications or devices developer',
+ 'Engineering manager',
+ 'Front-end developer',
+ 'Full-stack developer',
+ 'Game or graphics developer', 
+ 'Mobile developer', 
+ 'QA or test developer', 
+ 'System administrator'`
+
+ ```python 
+ def find_year_and_dev_by_DevType():
+    found_data_scientist = []
+    coding_years_set = []
+    for individual_position_block in years_coding_and_dev_type.values:
+        
+        this_man_is_a_data_scientist = False
+        if individual_position_block[1] is not None:
+            individual_position_block_list = individual_position_block[1].split(";")
+            for indi_positions in individual_position_block_list:
+                if indi_positions in data_science_position_titles:
+                    this_man_is_a_data_scientist = True
+        if this_man_is_a_data_scientist == True:
+            found_data_scientist.append(individual_position_block)
+            coding_years_set.append(individual_position_block[0])
+    coding_years_set = set(coding_years_set)
+    return found_data_scientist, coding_years_set
 
 
+found_years_devtype_ds , coding_years_set = find_year_and_dev_by_DevType() 
+```
 
-We will follow up by analyzing how distributed our audience are distributed throughout the world. Perhaps seeing a rise in survey takers in India, with this information we can analyze specific problems developers from different parts of the world are going through. With a followup in analysis of type of employment(full time, part time, contractors) and different fields of workers(health, tech, retail.. etc).  One other point in audience analysis that we are particularly interested in is imposter syndrome; as we learn more of the industry, we feel like we know less about everything, but is that what's really happening? With analysis to audience's thoughts to imposter syndrome, hopefully we can help those not so confident in oneself and let them know that not knowing everything is fine.
+```python
+def count_total_ds_in_age_group():
+    total_ds_in_age_group = {}
+    for i in range(0 , len(found_years_devtype_ds)): 
+        try:
+            total_ds_in_age_group[found_years_devtype_ds[i][0]] += 1
+        except:
+            total_ds_in_age_group[found_years_devtype_ds[i][0]] = 1
+    return total_ds_in_age_group
+total_ds_in_age_group = count_total_ds_in_age_group()
+# Sort in Age Order
+total_ds_in_age_group = { '0-2 years': 1071, '3-5 years': 2798,'6-8 years': 2482,'9-11 years': 1553, '12-14 years': 1071,  '15-17 years': 887,  '18-20 years': 785,'24-26 years': 334, '21-23 years': 425, '27-29 years': 174, '30 or more years': 721}
+```
 
-Furthermore, the next thing we're most interested in is how and what we are expected as a software engineer. The analysis of skill sets will allow us to prepare and perhaps even help others decide what classes or skills are required to be given to students just entering the field. Perhaps even tools including IDEs and databases to pick up for a better opportunity of getting a job, maybe using a Linux based system will help out your job search. Language preference is also a strong point in our analysis, with an overabundance of programming languages available, what are the better options and what does the corporate side of things enjoy but we are unaware. 
+```python
+plt.bar(total_ds_in_age_group.keys(), total_ds_in_age_group.values(), align='center', alpha=0.5)
+plt.ylabel('Number of Data Scientist Respondents')
+plt.title('Data Scientist Age Groups')
+fig = plt.gcf()
+fig.set_size_inches(20, 10) 
 
-Finally we analyse salary. Salary is one of if not the most important component for a job. No one likes to be low balled or underpaid, right? We will analyze our data with respect to different states in America and what our anticipated salary would be for each position of different levels. Or even figure out how salary increases as our years of experience increases and what else is expected from us deeper into our career.
+plt.savefig("./Figure/Age_DataScientist.png")
+plt.show()
+```
+The one information that immediately pops is how developers/scientists with 0~2 years of experience have close to no chance of recieving an offer for a data science positions, however once with 3+ years the opportunities reach it's peak. We concur that relative field experience and familiarity with data science is necessary for companies to entrust candidates with data science positions. <br>
+Another trend noticed is gradually decreasing respondents as age goes up, we believe this could be an result of data science as a trend therefore more younger developer/scientist are in the market and also more experienced candidates will likely move to management or C-suite positions(CEO, COO, CTO)
 
+```python
+plt.figure(figsize=(15,6))
+temp = selected_response[selected_response.DevType == 'Data scientist or machine learning specialist']
+temp = temp[temp.convertedsalary < 250000]
+ax = sns.boxplot(x="YearsCoding", 
+                 y="convertedsalary", 
+                 hue="YearsCoding", 
+                 data=temp)
+plt.savefig("./Figure/box plot years coding.png")
+```
+Visualizing age groups to salary, we again see how candidates with 0~2 year despite actually earning a job, will still likely recieve minimum salary, but with more than 2 years experience will highly increase your chances in the field.
+
+7. Next we check if formal educations for the position is necessary
+```python 
+formal_education = selected_response[["FormalEducation" , "DevType"]]
+cleaned_formal_education = []
+for i in formal_education.values:
+#     print(i)
+#     break
+    
+    if i is not None and i[1] is not None and i[0] is not None: 
+        #split multiple jobs positions
+        dev_type = i[1].split(";")
+        this_man_data_scientist = False
+        for jobs in dev_type:
+            if jobs in data_science_position_titles:
+                this_man_data_scientist = True
+        if this_man_data_scientist:
+            cleaned_formal_education.append(i[0])
+possible_education_credentials = set(cleaned_formal_education)
+#possible_education_credentials
+```
+Possible Credentials :
+```
+'Associate degree',
+ 'Bachelor’s degree (BA, BS, B.Eng., etc.)',
+ 'I never completed any formal education',
+ 'Master’s degree (MA, MS, M.Eng., MBA, etc.)',
+ 'Other doctoral degree (Ph.D, Ed.D., etc.)',
+ 'Primary/elementary school',
+ 'Professional degree (JD, MD, etc.)',
+ 'Secondary school (e.g. American high school, German Realschule or Gymnasium, etc.)',
+ 'Some college/university study without earning a degree'
+```
+
+```python
+total_degree_for_ds = {}
+for i in formal_education.values:
+    if i is not None and i[1] is not None and i[0] is not None:
+        try:
+            total_degree_for_ds[i[0]] +=1
+        except :
+            total_degree_for_ds[i[0]]= 1
+
+```
+```
+'Some college/university study without earning a degree': 1220,
+ 'Bachelor’s degree (BA, BS, B.Eng., etc.)': 6408,
+ 'Master’s degree (MA, MS, M.Eng., MBA, etc.)': 1864,
+ 'Associate degree': 416,
+ 'Other doctoral degree (Ph.D, Ed.D., etc.)': 292,
+ 'Secondary school (e.g. American high school, German Realschule or Gymnasium, etc.)': 218,
+ 'I never completed any formal education': 20,
+ 'Primary/elementary school': 25,
+ 'Professional degree (JD, MD, etc.)': 30
+ ```
+
+ ```python
+print_total_degree_keys = []
+for i in total_degree_for_ds.keys():
+    i = i.split(" " , 2) 
+    print_total_degree_keys.append(i[0] + " " + i [1])
+plt.bar(print_total_degree_keys, list(total_degree_for_ds.values()), align='center', alpha=0.5)
+plt.ylabel('Number of Data Scientist Respondents')
+plt.title('Data Scientist Education Degree')
+fig = plt.gcf()
+fig.set_size_inches(20, 10) 
+
+plt.savefig("./Figure/Degree Data Scientist.png")
+plt.show()
+```
+with this we see that most respondents with data science positions are bachelors to follow with Master degrees.
+Next to compare salary to degrees
+```python 
+plt.figure(figsize=(15,6))
+temp = selected_response[selected_response.DevType == 'Data scientist or machine learning specialist']
+temp = temp[temp.convertedsalary < 250000]
+ax = sns.boxplot(x="FormalEducation", 
+                 y="convertedsalary", 
+                 hue="FormalEducation", 
+                 data=temp)
+plt.xticks(rotation=10)
+plt.savefig("./Figure/formal educaiton box plt.png")
+```
+We see that degree levels does matter for data scientist salary wise, but considering the time studying and cost for these degrees, are these degrees really worth it?
+ 
+8. Next we look at language requirements and languages users are interested in trying for the following year
+
+``` python 
+def query_languages_and_next_year():
+    query_sql = "SELECT languageworkedwith, languagedesirenextyear from " + main_table + " WHERE languageworkedwith is not null OR languagedesirenextyear is not null AND country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall()
+    return rows
+def query_languages_and_next_year_ds():
+    query_sql = "SELECT languageworkedwith, languagedesirenextyear,devtype from " + main_table + " WHERE languageworkedwith is not null OR languagedesirenextyear is not null and devtype is not null AND country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall()
+    return rows
+queried_language_and_next_year = pd.DataFrame(query_languages_and_next_year() , columns = ["LanguageWorkedWith" , "LanguagesNextYear"])
+queried_language_and_next_year_ds = pd.DataFrame(query_languages_and_next_year_ds() , columns = ["LanguageWorkedWith" , "LanguagesNextYear", "DevType"])
+
+def find_languages_total_count():
+    languages_all_this = {}
+    languages_all_next = {}
+    for i in queried_language_and_next_year.values: 
+        if i is not None and i[0] is not None and i[1] is not None: 
+            current_list = i[0].split(";") 
+            next_list = i[1].split(";")
+            for languages_current in current_list:
+                try:
+                    languages_all_this[languages_current] +=1
+                except:
+                    languages_all_this[languages_current] = 1
+            for languages_next in next_list:
+                try:
+                    languages_all_next[languages_next] +=1
+                except:
+                    languages_all_next[languages_next] = 1
+    return languages_all_this, languages_all_next
+languages_all_this , languages_all_next = find_languages_total_count()
+def find_languages_total_count_ds():
+    languages_all_this = {}
+    languages_all_next = {}
+    for i in queried_language_and_next_year_ds.values: 
+        if i is not None and i[0] is not None and i[1] is not None and i[2] is not None:
+            jobs_titles = i[2].split(";")  
+            
+            this_man_is_ds = False
+            # Check if job is data scientist
+            for job_indi in jobs_titles:
+                if job_indi in data_science_position_titles:
+                    this_man_is_ds = True
+            if this_man_is_ds :
+                current_list = i[0].split(";") 
+                next_list = i[1].split(";")
+                for languages_current in current_list:
+                    try:
+                        languages_all_this[languages_current] +=1
+                    except:
+                        languages_all_this[languages_current] = 1
+                for languages_next in next_list:
+                    try:
+                        languages_all_next[languages_next] +=1
+                    except:
+                        languages_all_next[languages_next] = 1
+    return languages_all_this, languages_all_next
+languages_all_this_ds , languages_all_next_ds = find_languages_total_count_ds()
+```
+
+Now we plot all users for all positions, the blue bar stands for current users, and the orange bar stands for anticipated users for the following year
+``` python 
+dict_languages_current_next = {"Current" : languages_all_this , "Next Year" : languages_all_next}
+languages_dataframe = pd.DataFrame(dict_languages_current_next)
+languages_plot = languages_dataframe.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(60, 10) 
+plt.savefig("./Figure/Languages_this_next.png")
+plt.show()
+```
+
+Now we plot all users for data science positions, the blue bar stands for current users, and the orange bar stands for anticipated users for the following year
+``` python 
+dict_languages_current_next_ds = {"Current" : languages_all_this_ds , "Next Year" : languages_all_next_ds}
+languages_dataframe_ds = pd.DataFrame(dict_languages_current_next_ds)
+languages_plot_ds = languages_dataframe_ds.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(60, 10) 
+plt.savefig("./Figure/Languages_this_next_ds.png")
+plt.show()
+```
+
+Now we take a look at the merged chart for all positions and data scientist, for the current year and the following year
+``` python 
+dict_languages_current_next_ds_merge = {"Current" : languages_all_this , "Next Year" : languages_all_next , "CurrentDS" : languages_all_this_ds , "Next Year DS" : languages_all_next_ds}
+languages_dataframe_ds_merge = pd.DataFrame(dict_languages_current_next_ds_merge)
+languages_plot_ds = languages_dataframe_ds_merge.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(60, 10) 
+plt.savefig("./Figure/Languages_this_next_ds_merge.png")
+plt.show() 
+```
+
+
+9. Finally we look at the tools and platforms used
+
+``` python 
+def query_platforms_experience():
+    query_sql = "SELECT platformworkedwith, platformdesirenextyear from " + main_table + " WHERE platformworkedwith is not null AND platformdesirenextyear is not null AND country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall()
+    query_sql_ds = "SELECT platformworkedwith, platformdesirenextyear, devtype from " + main_table + " WHERE platformworkedwith is not null AND platformdesirenextyear is not null AND devtype is not null AND country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql_ds)
+    rows_ds  = c.fetchall()
+    
+    return rows, rows_ds
+queried_platform, queried_platform_ds = query_platforms_experience()
+queried_platforms_this_next = pd.DataFrame(queried_platform , columns = ["PlatformsCurrent" , "PlatformsNext"])
+queried_platforms_this_next_ds = pd.DataFrame(queried_platform_ds , columns = ["PlatformsCurrent" , "PlatformsNext", "DevType"])
+def find_platforms_all():
+    platforms_current = {}
+    platforms_next = {}
+    platforms_current_ds = {}
+    platforms_next_ds = {}
+    for i in queried_platforms_this_next_ds.values: 
+        if i is not None and i[0] is not None and i[1] is not None:
+            jobs_titles = i[2].split(";")  
+            
+            this_man_is_ds = False
+            # Check if job is data scientist
+            for job_indi in jobs_titles:
+                if job_indi in data_science_position_titles:
+                    this_man_is_ds = True
+                     
+            current_list = i[0].split(";") 
+            next_list = i[1].split(";")
+            for platforms_current_indi in current_list:
+                try:
+                    platforms_current[platforms_current_indi] +=1
+                    if this_man_is_ds:
+                        platforms_current_ds[platforms_current_indi] +=1
+                except:
+                    platforms_current[platforms_current_indi] = 1
+                    if this_man_is_ds:
+                        platforms_current_ds[platforms_current_indi] = 1 
+            for platforms_next_indi in next_list:
+                try:
+                    platforms_next[platforms_next_indi] +=1
+                    if this_man_is_ds:
+                        platforms_next_ds[platforms_next_indi] +=1
+                except:
+                    platforms_next[platforms_next_indi] = 1
+                    if this_man_is_ds:
+                        platforms_next_ds[platforms_next_indi] = 1
+             
+                
+                
+    return platforms_current, platforms_next , platforms_current_ds, platforms_next_ds 
+platforms_current , platforms_next, platforms_current_ds, platforms_next_ds  = find_platforms_all()
+```
+
+This is the merged chart of all positions in relevance to respondent count
+``` python 
+# Overall normal 
+dict_platforms_count_normal = {"Current" : platforms_current , "Next Year" : platforms_next }
+dict_platforms_count_normal_df = pd.DataFrame(dict_platforms_count_normal)
+dict_platforms_count_df_normal_plot = dict_platforms_count_normal_df.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(60, 10) 
+plt.savefig("./Figure/platform_normal.png")
+plt.show()
+```
+This is the merged chart of data science positions in relevance to respondent count
+``` python 
+# Overall normal + DS
+dict_platforms_count_ds = {"Current" : platforms_current_ds , "Next Year" : platforms_next_ds }
+dict_platforms_count_ds_df = pd.DataFrame(dict_platforms_count_ds)
+dict_platforms_count_df_ds_plot = dict_platforms_count_ds_df.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(60, 10) 
+plt.savefig("./Figure/platform_ds.png")
+plt.show()
+```
+To follow is the merged chart or all positions and data scientist, with the tools and platforms used this year and anticipated to use next year.
+``` python 
+# Overall normal + DS
+dict_platforms_count = {"Current" : platforms_current , "Next Year" : platforms_next , "CurrentDS" : platforms_current_ds , "Next Year DS" : platforms_next_ds}
+dict_platforms_count_df = pd.DataFrame(dict_platforms_count)
+dict_platforms_count_df_plot = dict_platforms_count_df.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(60, 10) 
+plt.savefig("./Figure/platform_merge.png")
+plt.show()
+```
+
+10. IDE
+``` python 
+def query_ide():
+    query_sql = "SELECT ide, devtype from " + main_table + " WHERE ide is not null AND devtype is not null AND country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall() 
+    
+    return rows  
+queried_ide = pd.DataFrame(query_ide() , columns = ["IDE" , "DevType"])
+
+def find_ide_count():
+    ide = {}
+    ide_ds = {} 
+    for i in queried_ide.values: 
+        if i is not None and i[0] is not None and i[1] is not None:
+            jobs_titles = i[1].split(";")  
+            
+            this_man_is_ds = False
+            # Check if job is data scientist
+            for job_indi in jobs_titles:
+                if job_indi in data_science_position_titles:
+                    this_man_is_ds = True
+                     
+            current_list = i[0].split(";")  
+            for ide_indi in current_list:
+                try:
+                    ide[ide_indi] +=1
+                    if this_man_is_ds:
+                        ide_ds[ide_indi] +=1
+                except:
+                    ide[ide_indi] = 1
+                    if this_man_is_ds:
+                        ide_ds[ide_indi] = 1   
+    return  ide , ide_ds 
+ide , ide_ds = find_ide_count()
+
+```
+
+Plot for all respondents 
+``` python 
+##### PLOTTING ####
+# Overall normal 
+dict_ids_count = {"All" : ide , "DS Nerds :D" : ide_ds }
+dict_ids_count_df = pd.DataFrame(dict_ids_count)
+dict_ids_count_df_plot = dict_ids_count_df.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(50, 10) 
+plt.savefig("./Figure/ide_choices.png")
+plt.show()
+``` 
+Plot for just data science respondents
+``` python 
+# Overall normal 
+dict_ids_count = { "DS Nerds :D" : ide_ds }
+dict_ids_count_df = pd.DataFrame(dict_ids_count)
+dict_ids_count_df_plot = dict_ids_count_df.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(50, 10) 
+plt.savefig("./Figure/ide_choices_ds.png")
+plt.show()
+
+``` 
+
+11. Operating Systems
+``` python 
+def query_os():
+    query_sql = "SELECT operatingsystem, devtype from " + main_table + " WHERE operatingsystem is not null AND devtype is not null AND country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall() 
+    
+    return rows  
+queried_os = pd.DataFrame(query_os() , columns = ["IDE" , "DevType"])
+def find_os_count():
+    os = {}
+    os_ds = {} 
+    for i in queried_os.values: 
+        if i is not None and i[0] is not None and i[1] is not None:
+            jobs_titles = i[1].split(";")  
+            
+            this_man_is_ds = False
+            # Check if job is data scientist
+            for job_indi in jobs_titles:
+                if job_indi in data_science_position_titles:
+                    this_man_is_ds = True
+                     
+            current_list = i[0].split(";")  
+            for os_options in current_list:
+                try:
+                    os[os_options] +=1
+                    if this_man_is_ds:
+                        os_ds[os_options] +=1
+                except:
+                    os[os_options] = 1
+                    if this_man_is_ds:
+                        os_ds[os_options] = 1   
+    return os , os_ds 
+os , os_ds =  find_os_count()
+```
+Linux based users are scarce, but when regarding percentage, alot of data scientist are using linux
+- would strongly recommend linux
+- > i use arch linux btw (from an ubuntu user)
+
+``` python 
+# Overall normal 
+dict_os_count = {"All" : os , "DS Nerds :D" : os_ds }
+dict_os_count_df = pd.DataFrame(dict_os_count)
+dict_os_count_df_plt = dict_os_count_df.plot( kind= 'bar' , secondary_y= 'amount' , rot= 0 )
+fig = plt.gcf()
+fig.set_size_inches(15, 10) 
+plt.savefig("./Figure/os.png")
+plt.show()
+```
+12. Salary
+
+``` python 
+def query_salary_respondents():
+    query_sql = "SELECT convertedsalary from " + main_table + " WHERE country = 'United States' AND Student = 'No' AND employment = 'Employed full-time' AND convertedsalary is not null "
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall() 
+    none_count = 0
+    has_value_count = 0
+    for i in rows: 
+        if i[0] is None:
+            none_count +=1
+        else:
+            has_value_count+=1 
+    return has_value_count / ( none_count + has_value_count)
+percentage_salary_respondents = query_salary_respondents()
+
+query_sql = "SELECT convertedsalary from " + main_table
+c = conn.cursor()
+c.execute(query_sql)
+conn.commit()
+rows  = c.fetchall() 
+# print(rows)
+
+is_none = 0
+is_not_none = 0
+for i in rows:
+#     print(i[0])
+    if i[0] is None or i[0] == 0:
+        is_none +=1
+    else:
+        is_not_none +=1
+print("percentage " , is_not_none/(is_none+is_not_none))
+```
+We see here that only 48% of respondents responded with their salary, therefore we think you should take all the responses with a grain of salt and use it just for reference.
+
+Female salary
+``` python 
+def query_female_salary():
+    
+    query_sql = "SELECT convertedsalary, gender  from " + main_table + " WHERE gender like 'Female'"
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall() 
+    female_salary_list = []
+    for i in rows:
+        if i[0] is not None:
+#             print(float(i[0]))
+            female_salary_list.append(float(i[0]))
+    return female_salary_list
+female_salary = pd.DataFrame(query_female_salary() , columns = ["Female Salary"])
+print(female_salary.describe().round())
+    
+```
+Male Salary
+``` python
+def query_male_salary():
+    
+    query_sql = "SELECT convertedsalary, gender  from " + main_table + " WHERE gender like 'Male'"
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall() 
+    male_salary_list = []
+    for i in rows:
+        if i[0] is not None:
+#             print(float(i[0]))
+            male_salary_list.append(float(i[0]))
+    return male_salary_list
+male_salary = pd.DataFrame(query_male_salary() , columns = ["Male Salary"])
+print(male_salary.describe().round())
+    
+```
+
+Overall salary
+``` python 
+def query_all_salary():
+    
+    query_sql = "SELECT convertedsalary, gender  from " + main_table 
+    c = conn.cursor()
+    c.execute(query_sql)
+    conn.commit()
+    rows  = c.fetchall() 
+    all_salary_list = []
+    for i in rows:
+        if i[0] is not None:
+#             print(float(i[0]))
+            all_salary_list.append(float(i[0]))
+    return all_salary_list
+all_salary = pd.DataFrame(query_all_salary() , columns = ["All Salary"])
+print(all_salary.describe().round())
+    
+```
 
 ---
-### **Part 3 : Code**   <br> 
-
-
----
-### **Part 4 : Results**   <br> 
+### **Part 3 : Results**   <br> 
+All in all, we can see a few trends happening and expected to happen in the following year. However the data is extremely dirty and many of the answers are ambiguous and could vary highly with the respondents' perspective to the question and answer; also since only 49% of the respondents responded with their salary, we think the salary related responses maybe too biased so again, take it with a grain of salt and use it just for reference.
+To the prospering data scientists, we believe that looking for data science positions right out of school may not be ideal and would recommend preparing for an alternative route including but not limited to software engineering and transfer into data science a few years after understanding the field. Projects and internships are highly recommended since it directly shows competence and real life experience in the field where it's really hard to quantify an candidate's capabilities. <br>
+Good luck to all those looking for a positions ;)
+<br>
+If any edits are recommended or mistakes i've made, fell free to contact me, i really enjoy advice and corrections.
